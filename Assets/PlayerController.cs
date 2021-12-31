@@ -12,12 +12,17 @@ public class PlayerController : MonoBehaviour
     private float m_HorizontalPosition;
     private float[] m_FixedPositionsX = new float[] { -2f, 0f, 2f };
     private int m_TargetPosX = 1;
+    private float m_LastPosX;
     private float m_Timer = 0f;
     private float m_Percent;
     private float m_PosDiff;
     private bool m_BallMoving = false;
     private int m_MovingDirection;
+    private bool m_BufferMoveSet = false;
+    private int m_BufferMoveDirection;
 
+    private const int DIRECTION_LEFT = -1;
+    private const int DIRECTION_RIGHT = 1;
 
     private void Awake()
     {
@@ -31,30 +36,38 @@ public class PlayerController : MonoBehaviour
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
-
-        if (!m_BallMoving)
+        if ((Input.GetKeyDown(KeyCode.D)) || (Input.GetKeyDown(KeyCode.A)))
         {
-            if ((Input.GetKey(KeyCode.D)) || (Input.GetKey(KeyCode.A)))
+            if (!m_BallMoving)
             {
-                m_BallMoving = true;
-                if ((Input.GetKey(KeyCode.D)))
+                if ((Input.GetKeyDown(KeyCode.D)))
                 {
-                    if (m_TargetPosX != 2)
-                    {
-                        m_TargetPosX++;
-                        m_MovingDirection = 1;
-                    }
+                    PrepareMove(DIRECTION_RIGHT);
                 }
-                else if ((Input.GetKey(KeyCode.A)))
+                else if ((Input.GetKeyDown(KeyCode.A)))
                 {
-                    if (m_TargetPosX != 0)
-                    {
-                        m_TargetPosX--;
-                        m_MovingDirection = -1;
-                    }
+                    PrepareMove(DIRECTION_LEFT);
                 }
             }
+            else
+            {
+                //only buffer at 1/2 of the move time
+                if(m_Timer >= timeToMove / 2)
+                {
+                    if ((Input.GetKeyDown(KeyCode.D)))
+                    {
+                        PrepareBufferedMove(DIRECTION_RIGHT);
+
+                    }
+                    else if ((Input.GetKeyDown(KeyCode.A)))
+                    {
+                        PrepareBufferedMove(DIRECTION_LEFT);
+                    }
+                }
+
+            }
         }
+
 
         //float playerSize = transform.localScale.x / 2;
         if (m_Timer < timeToMove && m_BallMoving)
@@ -74,49 +87,104 @@ public class PlayerController : MonoBehaviour
         m_Timer += Time.deltaTime;
         m_Percent = m_Timer / timeToMove;
 
-        if (transform.position.x > 0)
-        {
-            if (m_MovingDirection == 1)
-            {
-                m_PosDiff = m_FixedPositionsX[m_TargetPosX] - transform.position.x;
-            }
-            else
-            {
-                m_PosDiff = transform.position.x * -1f;
-            }
-        }
-        else if (transform.position.x < 0)
-        {
-            if (m_MovingDirection == -1)
-            {
-                m_PosDiff = m_FixedPositionsX[m_TargetPosX] - transform.position.x;
-            }
-            else
-            {
-                m_PosDiff = transform.position.x * -1f;
-            }
-        }
-        else
-        {
-            m_PosDiff = m_FixedPositionsX[m_TargetPosX];
-        }
-        m_HorizontalPosition = transform.position.x + m_PosDiff * m_Percent;
-        Debug.Log("Position to add:");
-        Debug.Log(m_PosDiff * m_Percent);
-        Debug.Log("Current pos after addition:");
-        Debug.Log(m_HorizontalPosition);
+        m_HorizontalPosition = m_LastPosX + m_PosDiff * m_Percent;
 
         transform.position = new Vector3(
             m_HorizontalPosition,
             transform.position.y,
             transform.position.z);
 
-        Debug.Log(m_Timer);
-
-        if (transform.position.x == m_FixedPositionsX[m_TargetPosX] && m_Timer >= timeToMove)
+        if (m_Timer >= timeToMove)
         {
+            // fix minor calculation mistake if any
+            if(transform.position.x != m_FixedPositionsX[m_TargetPosX])
+            {
+                transform.position = new Vector3(
+                    m_FixedPositionsX[m_TargetPosX],
+                    transform.position.y,
+                    transform.position.z);
+            }
             m_Timer = 0f;
             m_BallMoving = false;
+            if (m_BufferMoveSet)
+            {
+                PrepareMove(m_BufferMoveDirection);
+                // release buffer
+                m_BufferMoveSet = !m_BufferMoveSet;
+            }   
         }
+    }
+
+    public void PrepareMove(int direction)
+    {
+        if (direction==DIRECTION_RIGHT)
+        {
+            if (m_TargetPosX != 2)
+            {
+                m_TargetPosX++;
+                m_MovingDirection = direction;
+                m_BallMoving = true;
+                m_LastPosX = transform.position.x;
+                m_PosDiff = CalculateNextTargetX();
+            }
+        }
+        else if (direction== DIRECTION_LEFT)
+        {
+            if (m_TargetPosX != 0)
+            {
+                m_TargetPosX--;
+                m_MovingDirection = direction;
+                m_BallMoving = true;
+                m_LastPosX = transform.position.x;
+                m_PosDiff = CalculateNextTargetX();
+            }
+        }
+    }
+
+    public void PrepareBufferedMove(int direction)
+    {
+        if (direction == DIRECTION_RIGHT)
+        {
+            m_BufferMoveSet = true;
+            m_BufferMoveDirection = direction;
+        }
+        else if (direction == DIRECTION_LEFT)
+        {
+            m_BufferMoveSet = true;
+            m_BufferMoveDirection = direction;
+        }
+    }
+
+    public float CalculateNextTargetX()
+    {
+        float PosDiff;
+
+        if (transform.position.x > 0)
+        {
+            if (m_MovingDirection == 1)
+            {
+                PosDiff = m_FixedPositionsX[m_TargetPosX] - transform.position.x;
+            }
+            else
+            {
+                PosDiff = transform.position.x * -1f;
+            }
+        }
+        else if (transform.position.x < 0)
+        {
+            if (m_MovingDirection == -1)
+            {
+                PosDiff = m_FixedPositionsX[m_TargetPosX] - transform.position.x;
+            }
+            else
+            {
+                PosDiff = transform.position.x * -1f;
+            }
+        }
+        else
+        {
+            PosDiff = m_FixedPositionsX[m_TargetPosX];
+        }
+        return PosDiff;
     }
 }
