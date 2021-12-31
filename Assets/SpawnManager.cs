@@ -6,32 +6,35 @@ public class SpawnManager : MonoBehaviour
 {
     public GameObject enemyPrefab;
     public GameObject catcherPrefab;
+    public GameObject Player;
+    public float spawnEnemyWindow = 1.5f;
+    public float spawnCatcherWindow = 1.5f;
+    private int m_NextEnemyPosition;
+    private int m_NextCatcherPosition;
+    private float m_SpawnPosZ;
 
-    public Vector2 spawnRangeX;
 
     // Start is called before the first frame update
     void Start()
     {
-        InvokeRepeating(nameof(SpawnEvader), 0, 2.0f);
-        InvokeRepeating(nameof(SpawnCatcher), 1.0f, 2.0f);
+        m_SpawnPosZ = Player.transform.position.x + 50f;
+        InvokeRepeating(nameof(SpawnInteractables), 0f, spawnEnemyWindow);
     }
 
-    private void SpawnCatcher()
+    private void SpawnInteractables()
     {
-        SpawnEnemy(EnemyType.Catcher);
+        (m_NextEnemyPosition, m_NextCatcherPosition) = CalculateNextPawnPoints();
+        SpawnEnemy(EnemyType.Catcher, m_NextEnemyPosition);
+        SpawnEnemy(EnemyType.Evader, m_NextCatcherPosition);
     }
 
-    private void SpawnEvader()
+    private void SpawnEnemy(EnemyType enemyType, int index )
     {
-        SpawnEnemy(EnemyType.Evader);
-    }
 
-    private void SpawnEnemy(EnemyType enemyType)
-    {
         Vector3 spawnPosition = new Vector3(
-            Random.Range(spawnRangeX[0], spawnRangeX[1]),
+            AvailablePositions.FixedPositionsX[index],
             enemyPrefab.transform.position.y,
-            enemyPrefab.transform.position.z);
+            m_SpawnPosZ);
 
         if (enemyType == EnemyType.Evader)
         {
@@ -39,12 +42,24 @@ public class SpawnManager : MonoBehaviour
                 enemyPrefab,
                 spawnPosition,
                 enemyPrefab.transform.rotation);
-        } else
+        }
+        else
         {
             Instantiate(
                 catcherPrefab,
                 spawnPosition,
                 catcherPrefab.transform.rotation);
         }
+    }
+
+    private (int, int) CalculateNextPawnPoints()
+    {
+        int getRanNum1 = Random.Range(0, AvailablePositions.FixedPositionsX.Length);
+        int getRanNum2 = Random.Range(0, AvailablePositions.FixedPositionsX.Length);
+        while (getRanNum2 == getRanNum1)
+        {
+            getRanNum2 = Random.Range(0, AvailablePositions.FixedPositionsX.Length);
+        }
+        return (getRanNum1, getRanNum2);
     }
 }

@@ -10,7 +10,6 @@ public class PlayerController : MonoBehaviour
 
     private Stats m_Stats;
     private float m_HorizontalPosition;
-    private float[] m_FixedPositionsX = new float[] { -2f, 0f, 2f };
     private int m_TargetPosX = 1;
     private float m_LastPosX;
     private float m_Timer = 0f;
@@ -56,12 +55,12 @@ public class PlayerController : MonoBehaviour
                 {
                     if ((Input.GetKeyDown(KeyCode.D)))
                     {
-                        PrepareBufferedMove(DIRECTION_RIGHT);
+                        StoreBufferedMove(DIRECTION_RIGHT);
 
                     }
                     else if ((Input.GetKeyDown(KeyCode.A)))
                     {
-                        PrepareBufferedMove(DIRECTION_LEFT);
+                        StoreBufferedMove(DIRECTION_LEFT);
                     }
                 }
 
@@ -97,10 +96,10 @@ public class PlayerController : MonoBehaviour
         if (m_Timer >= timeToMove)
         {
             // fix minor calculation mistake if any
-            if(transform.position.x != m_FixedPositionsX[m_TargetPosX])
+            if(transform.position.x != AvailablePositions.FixedPositionsX[m_TargetPosX])
             {
                 transform.position = new Vector3(
-                    m_FixedPositionsX[m_TargetPosX],
+                    AvailablePositions.FixedPositionsX[m_TargetPosX],
                     transform.position.y,
                     transform.position.z);
             }
@@ -119,7 +118,7 @@ public class PlayerController : MonoBehaviour
     {
         if (direction==DIRECTION_RIGHT)
         {
-            if (m_TargetPosX != 2)
+            if (m_TargetPosX != AvailablePositions.FixedPositionsX.Length-1)
             {
                 m_TargetPosX++;
                 m_MovingDirection = direction;
@@ -141,7 +140,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void PrepareBufferedMove(int direction)
+    public void StoreBufferedMove(int direction)
     {
         if (direction == DIRECTION_RIGHT)
         {
@@ -163,7 +162,7 @@ public class PlayerController : MonoBehaviour
         {
             if (m_MovingDirection == 1)
             {
-                PosDiff = m_FixedPositionsX[m_TargetPosX] - transform.position.x;
+                PosDiff = AvailablePositions.FixedPositionsX[m_TargetPosX] - transform.position.x;
             }
             else
             {
@@ -174,7 +173,7 @@ public class PlayerController : MonoBehaviour
         {
             if (m_MovingDirection == -1)
             {
-                PosDiff = m_FixedPositionsX[m_TargetPosX] - transform.position.x;
+                PosDiff = AvailablePositions.FixedPositionsX[m_TargetPosX] - transform.position.x;
             }
             else
             {
@@ -183,7 +182,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            PosDiff = m_FixedPositionsX[m_TargetPosX];
+            PosDiff = AvailablePositions.FixedPositionsX[m_TargetPosX];
         }
         return PosDiff;
     }
